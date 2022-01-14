@@ -1,0 +1,28 @@
+name: Bedwars
+version: 0.0.1
+main: org.shadowcrafter.bedwars.Bedwars
+author: shadowcrafter
+api-version: 1.18
+
+commands:
+  tptoworld:
+    description: Teleport yourself to another world
+    usage: /<command> <world>
+    permission: bedwars.tptoworld
+    aliases: [tw]
+  unloadworld:
+    description: Unload the world you are currently in. Putting you in the server default world
+    usage: /<command>
+    permission: bedwars.unloadworld
+    aliases: [unload]
+  bedwars:
+    description: Enter a Bedwars game
+    usage: /<command> <map>
+  endgame:
+    description: End the Bedwars game early
+    usage: /<command>
+    permission: bedwars.endgame
+  start:
+    description: Start the Bedwars game early
+    usage: /<command>
+    permission: bedwars.start
