@@ -27,6 +27,8 @@ public class StartGameCommand extends CommandUtils implements CommandExecutor {
 		
 		if (game == null) return endCommand(sender, "§cYou are not currently in a pre-game lobby");
 		
+		if (game.getMap() == null) return endCommand(sender, "§cThe map is not fully loaded yet");
+		
 		game.start();
 		return endCommand(sender, "§aGame successfully started");
 	}

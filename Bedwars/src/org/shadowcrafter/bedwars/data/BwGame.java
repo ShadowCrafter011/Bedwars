@@ -18,6 +18,7 @@ import org.bukkit.block.Sign;
 import org.bukkit.block.data.type.Bed;
 import org.bukkit.block.data.type.Chest;
 import org.bukkit.block.data.type.EnderChest;
+import org.bukkit.entity.Bee;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
@@ -42,6 +43,8 @@ public class BwGame extends CoordUtils {
 	private String mapName;
 	private Map<Player, PlayerState> players;
 	
+	private List<Location> breakableBlocks;
+	
 	private List<Location> diamondGens;
 	private List<Location> emeraldGens;
 	
@@ -63,13 +66,25 @@ public class BwGame extends CoordUtils {
 		this.diamondGens = new ArrayList<>();
 		this.emeraldGens = new ArrayList<>();
 		this.tasks = new ArrayList<>();
+		this.breakableBlocks = new ArrayList<>();
 		
 		this.mapName = name;
 		this.map = map;
 		
 		Arrays.stream(Teams.values()).forEach((t) -> {
-			teams.put(t, new Team());
+			teams.put(t, new Team(t));
 		});
+	}
+	
+	public Team getTeam(Teams color) {
+		return teams.get(color);
+	}
+	
+	public Team getTeam(Player p) {
+		for (Team t : teams.values()) {
+			if (t.getPlayers().contains(p)) return t;
+		}
+		return null;
 	}
 	
 	public int changeTeam(Player p, Teams team) {

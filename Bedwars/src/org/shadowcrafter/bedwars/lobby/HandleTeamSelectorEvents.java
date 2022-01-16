@@ -28,6 +28,10 @@ public class HandleTeamSelectorEvents implements Listener {
 		if (e.getItem() == null) return;
 		if (e.getItem().getType() != Material.NOTE_BLOCK) return;
 		e.setCancelled(true);
+		if (plugin.getGameWith(e.getPlayer()).getMap() == null) {
+			e.getPlayer().sendMessage("§cThe map needs to load before you do that");
+			return;
+		}
 		
 		if (tasks.containsKey(e.getPlayer())) return;
 		
@@ -49,6 +53,10 @@ public class HandleTeamSelectorEvents implements Listener {
 		if (e.getItemDrop() == null) return;
 		if (e.getItemDrop().getItemStack().getType() != Material.NOTE_BLOCK) return;
 		e.setCancelled(true);
+		if (plugin.getGameWith(e.getPlayer()).getMap() == null) {
+			e.getPlayer().sendMessage("§cThe map needs to load before you do that");
+			return;
+		}
 		
 		if (tasks.containsKey(e.getPlayer())) return;
 		
@@ -68,6 +76,10 @@ public class HandleTeamSelectorEvents implements Listener {
 		if (!e.getWhoClicked().getWorld().getName().equals("bedwars/lobby")) return;
 		if (e.getCurrentItem() == null) return;
 		if (e.getCurrentItem().getType() != Material.NOTE_BLOCK) return;
+		if (plugin.getGameWith(e.getWhoClicked()).getMap() == null) {
+			e.getWhoClicked().sendMessage("§cThe map needs to load before you do that");
+			return;
+		}
 		e.setCancelled(true);
 		
 		if (tasks.containsKey(e.getWhoClicked())) return;
@@ -108,9 +120,10 @@ public class HandleTeamSelectorEvents implements Listener {
 			
 			Inventory updated = new TeamSelectorInventory(plugin.getGameWith(p), Teams.values()).build();
 			p.getOpenInventory().getTopInventory().setContents(updated.getContents());
+			return;
 		}
 		
-		String teamToSwitchTo = e.getCurrentItem().getItemMeta().getDisplayName().split(" ")[3];		
+		String teamToSwitchTo = e.getCurrentItem().getItemMeta().getDisplayName().split(" ")[3];
 		Teams t = Teams.valueOf(teamToSwitchTo.toUpperCase());
 		
 		int code = plugin.getGameWith(p).changeTeam(p, t);

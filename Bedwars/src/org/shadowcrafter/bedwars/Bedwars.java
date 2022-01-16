@@ -20,6 +20,7 @@ import org.shadowcrafter.bedwars.commands.TpToWorld;
 import org.shadowcrafter.bedwars.commands.UnloadWorld;
 import org.shadowcrafter.bedwars.data.BwGame;
 import org.shadowcrafter.bedwars.data.BwPlayer;
+import org.shadowcrafter.bedwars.listeners.HandleBedwarsEvents;
 import org.shadowcrafter.bedwars.listeners.HandleEntityDamageEvent;
 import org.shadowcrafter.bedwars.listeners.HandleItemDespawnEvent;
 import org.shadowcrafter.bedwars.listeners.HandleItemMergeEvent;
@@ -69,6 +70,7 @@ public class Bedwars extends JavaPlugin {
 		pl.registerEvents(new HandleItemDespawnEvent(), plugin);
 		pl.registerEvents(new HandleEntityDamageEvent(), plugin);
 		pl.registerEvents(new HandleTeamSelectorEvents(), plugin);
+		pl.registerEvents(new HandleBedwarsEvents(), plugin);
 		
 		getCommand("tptoworld").setExecutor(new TpToWorld());
 		getCommand("bedwars").setExecutor(new BedwarsCommand());
