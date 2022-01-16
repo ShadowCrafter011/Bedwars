@@ -22,7 +22,7 @@ public class EndGameCommand extends CommandUtils implements CommandExecutor {
 		
 		for (BwGame game : Bedwars.getPlugin().getGames()) {
 			if (game.isPlayerHere(p)) {
-				game.end();
+				game.forceEnd();
 				return endCommand(sender, "§aEnded the game you are currently in and unloaded world §3" + game.getMap().getName());
 			}
 			

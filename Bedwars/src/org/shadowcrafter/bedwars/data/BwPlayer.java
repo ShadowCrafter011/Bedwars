@@ -54,7 +54,7 @@ public class BwPlayer {
 		}, 0, 1);
 	}
 	
-	public void endTimer() {
+	public void endTimer(boolean msg) {
 		if (stopWatch == null) return;
 		int time = (int) stopWatch.getTime();
 		int millis = time % 1000 / 100; time -= time % 1000;
@@ -62,7 +62,9 @@ public class BwPlayer {
 		int mins = (int) Math.floor(secs/60); secs = secs % 60;
 		int hours = (int) Math.floor(mins/60); mins = mins % 60;
 		Bukkit.getScheduler().cancelTask(taskID);
-		p.sendMessage("§6Your final time was " + (hours > 0 ? hours + ":" : "") + (mins >= 10 ? (mins > 0 || hours > 0 ? mins + ":" : "") : (hours > 0 ? "0" : "") + (mins > 0 || hours > 0 ? mins + ":" : "")) + (secs >= 10 ? secs : (mins > 0 ? "0" : "") + secs) + "." + millis);
+		checkpoint = p.getLocation();
+		p.spigot().sendMessage(ChatMessageType.ACTION_BAR, new ComponentBuilder("").create());
+		if(msg) p.sendMessage("§6Your final time was " + (hours > 0 ? hours + ":" : "") + (mins >= 10 ? (mins > 0 || hours > 0 ? mins + ":" : "") : (hours > 0 ? "0" : "") + (mins > 0 || hours > 0 ? mins + ":" : "")) + (secs >= 10 ? secs : (mins > 0 ? "0" : "") + secs) + "." + millis);
 		try{
 			this.stopWatch.stop();
 		}catch (IllegalStateException | NullPointerException e) {

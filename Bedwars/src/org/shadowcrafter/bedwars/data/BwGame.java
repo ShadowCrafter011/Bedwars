@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.bukkit.Bukkit;
+import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
@@ -17,73 +18,116 @@ import org.bukkit.block.Sign;
 import org.bukkit.block.data.type.Bed;
 import org.bukkit.block.data.type.Chest;
 import org.bukkit.block.data.type.EnderChest;
-import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
+import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Villager;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.potion.PotionEffect;
+import org.bukkit.potion.PotionEffectType;
 import org.shadowcrafter.bedwars.Bedwars;
+import org.shadowcrafter.bedwars.util.CoordUtils;
 
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 
 @Data
+@EqualsAndHashCode(callSuper=false)
 @SuppressWarnings("unused")
-public class BwGame {
+public class BwGame extends CoordUtils {
 	
 	@Getter
 	private World map;
+	private String mapName;
 	private Map<Player, PlayerState> players;
 	
 	private List<Location> diamondGens;
 	private List<Location> emeraldGens;
 	
+	private int diamondLimit = 4;
+	private int emeraldLimit = 2;
+	
+	private int emeraldSpeed = 1200;
+	private int diamondSpeed = 600;
+	
 	private Map<Teams, Team> teams;
 	
-	public BwGame(World map, Player p) {
+	private List<Integer> tasks;
+	
+	private boolean started;
+	
+	public BwGame(World map, String name) {
 		this.players = new HashMap<>();
 		this.teams = new HashMap<>();
 		this.diamondGens = new ArrayList<>();
 		this.emeraldGens = new ArrayList<>();
+		this.tasks = new ArrayList<>();
 		
+		this.mapName = name;
 		this.map = map;
-		this.players.put(p, PlayerState.PLAYING);
-	}
-	
-	public void start() {
-		players.keySet().forEach((Player player) -> {
-			player.teleport(map.getSpawnLocation());
-			Bedwars.getPlugin().getPlayer(player).endTimer();
-		});
 		
 		Arrays.stream(Teams.values()).forEach((t) -> {
 			teams.put(t, new Team());
 		});
+	}
+	
+	public int changeTeam(Player p, Teams team) {
 		
+		if (teams.get(team).getPlayers().contains(p)) return 2;
+		
+		boolean success = teams.get(team).addPlayer(p);
+		
+		if (!success) return 1;
+		
+		teams.values().forEach((t) -> {
+			if (t.getPlayers().contains(p) && t.equals(teams.get(team)) == false) t.getPlayers().remove(p);
+		});
+		
+		players.put(p, PlayerState.PLAYING);
+		
+		return 0;
+	}
+	
+	public void setSpectating(Player p) {
+		teams.values().forEach((t) -> {
+			if (t.getPlayers().contains(p)) t.getPlayers().remove(p);
+		});
+		
+		players.put(p, PlayerState.SPECTATING);
+	}
+	
+	public void loadLocations() {
 		CommandBlock cb = (CommandBlock) map.getBlockAt(new Location(map, 0, 0, 0)).getState();
 		
 		String data = cb.getCommand();
-		String name = cb.getCommand().split("#")[0];
+		String n = cb.getCommand().split("#")[0];
 		String signLocs = cb.getCommand().split("#")[1];
 		String[] signs = signLocs.split(":");
 		
-		cb.setType(Material.AIR);
-		cb.update();
+		new Location(map, 0, 0, 0).getBlock().setType(Material.AIR);
 		
 		Arrays.stream(signs).forEach((s) -> {
-			int[] locs = new int[3];
-			for (int i = 0; i < locs.length; i++) locs[i] = Integer.parseInt(s.split(" ")[i]);
+			//System.out.println(s);
+			double[] locs = new double[3];
+			for (int i = 0; i < locs.length; i++) locs[i] = Double.parseDouble(s.split(" ")[i]);
 			Location loc = new Location(map, locs[0], locs[1], locs[2]);
 			Sign sign = (Sign) map.getBlockAt(loc).getState();
 			
 			String[] lines = sign.getLines();
 				
+			lines[0] = lines[0].toLowerCase();
 			switch (lines[0]) {
 			
-			case "Bed":
+			case "bed":
 				Block start = loc.getBlock();
 				BlockFace face = BlockFace.valueOf(lines[2].toUpperCase());
 				for (Bed.Part part : Bed.Part.values()) {
-					start.setType(Material.valueOf(lines[1].toUpperCase() + "_BED"));
+					if (lines[1].equalsIgnoreCase("aqua")) {
+						start.setType(Material.LIGHT_BLUE_BED);
+					}else {
+						start.setType(Material.valueOf(lines[1].toUpperCase() + "_BED"));
+					}
 					Bed bedState = (Bed) start.getBlockData();
 					bedState.setPart(part);
 					bedState.setFacing(face);
@@ -92,21 +136,20 @@ public class BwGame {
 				}
 				break;
 				
-			case "Spawn":
+			case "spawn":
 				Teams color = Teams.valueOf(lines[1].toUpperCase());
-				BlockFace face1 = BlockFace.valueOf(lines[2].toUpperCase());
 				
-				teams.get(color).setFacing(face1);
+				teams.get(color).setSpawn(linesToLocation(map, lines));
 				loc.getBlock().setType(Material.AIR);
 				break;
 			
-			case "Isg":
+			case "isg":
 				Teams color1 = Teams.valueOf(lines[1].toUpperCase());
-				teams.get(color1).setGenerator(loc);
+				teams.get(color1).setGenerator(linesToLocation(map, lines));
 				loc.getBlock().setType(Material.AIR);
 				break;
 				
-			case "Chest":
+			case "chest":
 				teams.get(Teams.valueOf(lines[1].toUpperCase())).setTeamChest(loc);
 				
 				BlockFace face2 = BlockFace.valueOf(lines[2].toUpperCase());
@@ -116,7 +159,7 @@ public class BwGame {
 				loc.getBlock().setBlockData(chestD);
 				break;
 				
-			case "Enderchest":
+			case "enderchest":
 				BlockFace face3 = BlockFace.valueOf(lines[2].toUpperCase());
 				loc.getBlock().setType(Material.ENDER_CHEST);
 				EnderChest ecd = (EnderChest) loc.getBlock().getBlockData();
@@ -124,35 +167,37 @@ public class BwGame {
 				loc.getBlock().setBlockData(ecd);
 				break;
 				
-			case "Shop":
-				
-				double x = Double.parseDouble(lines[2].split(" ")[0]);
-				double y = Double.parseDouble(lines[2].split(" ")[1]);
-				double z = Double.parseDouble(lines[2].split(" ")[2]);
-				
-				float yaw = Float.parseFloat(lines[3].split(" ")[0]);
-				float pitch = Float.parseFloat(lines[3].split(" ")[1]);
-				
-				Villager e = (Villager) map.spawnEntity(new Location(map, x, y, z, yaw, pitch), EntityType.VILLAGER);
+			case "shop":				
+				Villager e = (Villager) map.spawnEntity(linesToLocation(map, lines), EntityType.VILLAGER);
+				e.setCustomNameVisible(true);
+				Teams teams = Teams.valueOf(lines[1].toUpperCase());
 				e.setAI(false);
 				e.setCustomName("§aShop");
 				e.setInvulnerable(true);
+				e.addPotionEffect(new PotionEffect(PotionEffectType.DAMAGE_RESISTANCE, 99999, 4, false, false, false));
+				this.teams.get(teams).setShop(e);
 				loc.getBlock().setType(Material.AIR);
 				break;
 				
-			case "Upgrades":
-				
-				double x1 = Double.parseDouble(lines[2].split(" ")[0]);
-				double y1 = Double.parseDouble(lines[2].split(" ")[1]);
-				double z1 = Double.parseDouble(lines[2].split(" ")[2]);
-				
-				float yaw1 = Float.parseFloat(lines[3].split(" ")[0]);
-				float pitch1 = Float.parseFloat(lines[3].split(" ")[1]);
-				
-				Villager e1 = (Villager) map.spawnEntity(new Location(map, x1, y1, z1, yaw1, pitch1), EntityType.VILLAGER);
+			case "upgrades":				
+				Villager e1 = (Villager) map.spawnEntity(linesToLocation(map, lines), EntityType.VILLAGER);
+				e1.setCustomNameVisible(true);
+				e1.addPotionEffect(new PotionEffect(PotionEffectType.DAMAGE_RESISTANCE, 99999, 4, false, false, false));
+				Teams teams1 = Teams.valueOf(lines[1].toUpperCase());
 				e1.setAI(false);
 				e1.setCustomName("§aUpgrades");
 				e1.setInvulnerable(true);
+				this.teams.get(teams1).setUpgradeShop(e1);
+				loc.getBlock().setType(Material.AIR);
+				break;
+				
+			case "diamondg":
+				diamondGens.add(linesToLocation(map, lines));
+				loc.getBlock().setType(Material.AIR);
+				break;
+				
+			case "emeraldg":
+				emeraldGens.add(linesToLocation(map, lines));
 				loc.getBlock().setType(Material.AIR);
 				break;
 				
@@ -162,11 +207,89 @@ public class BwGame {
 		});
 	}
 	
-	public void end() {
+	public void addPlayer(Player p, Teams team) {
+		players.put(p, PlayerState.PLAYING);
+		teams.get(team).addPlayer(p);
+	}
+	
+	public void start() {
+		teams.values().forEach((t) -> {t.start();});
+		
+		players.entrySet().forEach((e) -> {
+			if (e.getValue() == PlayerState.SPECTATING) {
+				e.getKey().teleport(new Location(map, 0, 120, 0));
+				
+				e.getKey().setAllowFlight(true);
+				e.getKey().setFlying(true);
+				e.getKey().setGameMode(GameMode.ADVENTURE);
+				e.getKey().setInvulnerable(true);
+				
+				map.getPlayers().forEach((p) -> {p.hidePlayer(Bedwars.getPlugin(), e.getKey());});
+			}
+		});
+		
+		this.started = true;
+		
+		tasks.add(Bukkit.getScheduler().scheduleSyncRepeatingTask(Bedwars.getPlugin(), new Runnable() {
+			
+			int count = 1;
+			
+			@Override
+			public void run() {
+				
+				//Drop diamonds
+				if (count % diamondSpeed == 0) {
+					for (Location l : diamondGens) {
+						if (l != null && countItemsAt(map, l, 6, Material.DIAMOND) < diamondLimit) {
+							Item i = map.dropItem(l, new ItemStack(Material.DIAMOND));
+							i.setVelocity(i.getVelocity().zero());
+						}
+					}
+				}
+				
+				//Drop emeralds
+				if (count % emeraldSpeed == 0) {
+					for (Location l : emeraldGens) {
+						if (l != null && countItemsAt(map, l, 6, Material.EMERALD) < emeraldLimit) {
+							Item i = map.dropItem(l, new ItemStack(Material.EMERALD));
+							i.setVelocity(i.getVelocity().zero());
+						}
+					}
+				}
+				
+				for (Team t : teams.values()) {
+					if (t.getGenerator() != null) {
+						
+						//Drop iron
+						if (count % t.getGeneratorSpeed() == 0 && countItemsAt(map, t.getGenerator(), 3, Material.IRON_INGOT) < t.getIronLimit()) {
+							Item i = map.dropItem(t.getGenerator(), new ItemStack(Material.IRON_INGOT));
+							i.setVelocity(i.getVelocity().zero());
+						}
+						
+						//Drop gold
+						if (count % (t.getGeneratorSpeed() * 5) == 0 && countItemsAt(map, t.getGenerator(), 3, Material.GOLD_INGOT) < t.getGoldLimit()) {
+							Item i = map.dropItem(t.getGenerator(), new ItemStack(Material.GOLD_INGOT));
+							i.setVelocity(i.getVelocity().zero());
+						}
+						
+					}
+				}	
+				count++;
+			}
+		}, 0, 1));
+		
+	}
+	
+	public void forceEnd() {
 		for (Player p : map.getPlayers()) {
 			p.teleport(Bukkit.getWorld("world").getSpawnLocation());
 			p.sendMessage("§aYou have been evacuated from the world §3" + map.getName() + " §abecause it is about to get unloaded");
 		}
+		
+		tasks.forEach((t) -> {
+			Bukkit.getScheduler().cancelTask(t);
+		});
+		
 		Bukkit.unloadWorld(map.getName(), true);
 		Bedwars.getPlugin().removeGame(this);
 	}

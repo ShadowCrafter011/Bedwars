@@ -9,6 +9,7 @@ import java.util.Map;
 import org.bukkit.Bukkit;
 import org.bukkit.World;
 import org.bukkit.WorldCreator;
+import org.bukkit.entity.HumanEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -19,9 +20,14 @@ import org.shadowcrafter.bedwars.commands.TpToWorld;
 import org.shadowcrafter.bedwars.commands.UnloadWorld;
 import org.shadowcrafter.bedwars.data.BwGame;
 import org.shadowcrafter.bedwars.data.BwPlayer;
+import org.shadowcrafter.bedwars.listeners.HandleEntityDamageEvent;
+import org.shadowcrafter.bedwars.listeners.HandleItemDespawnEvent;
+import org.shadowcrafter.bedwars.listeners.HandleItemMergeEvent;
 import org.shadowcrafter.bedwars.listeners.PlayerJoinQuitListener;
+import org.shadowcrafter.bedwars.lobby.FarmlandTrampleEvent;
 import org.shadowcrafter.bedwars.lobby.HandlePlayerDamageEvent;
 import org.shadowcrafter.bedwars.lobby.HandlePlayerFoodLevelChangeEvent;
+import org.shadowcrafter.bedwars.lobby.HandleTeamSelectorEvents;
 import org.shadowcrafter.bedwars.lobby.HandlePlayerMoveEvent;
 
 import lombok.Getter;
@@ -58,6 +64,11 @@ public class Bedwars extends JavaPlugin {
 		pl.registerEvents(new PlayerJoinQuitListener(), plugin);
 		pl.registerEvents(new HandlePlayerDamageEvent(), plugin);
 		pl.registerEvents(new HandlePlayerFoodLevelChangeEvent(), plugin);
+		pl.registerEvents(new HandleItemMergeEvent(), plugin);
+		pl.registerEvents(new FarmlandTrampleEvent(), plugin);
+		pl.registerEvents(new HandleItemDespawnEvent(), plugin);
+		pl.registerEvents(new HandleEntityDamageEvent(), plugin);
+		pl.registerEvents(new HandleTeamSelectorEvents(), plugin);
 		
 		getCommand("tptoworld").setExecutor(new TpToWorld());
 		getCommand("bedwars").setExecutor(new BedwarsCommand());
@@ -89,6 +100,20 @@ public class Bedwars extends JavaPlugin {
 	
 	public void addGame(BwGame game) {
 		games.add(game);
+	}
+	
+	public BwGame getGameWith(Player p) {
+		for (BwGame g : games) {
+			if (g.getPlayers().containsKey(p)) return g;
+		}
+		return null;
+	}
+	
+	public BwGame getGameWith(HumanEntity p) {
+		for (BwGame g : games) {
+			if (g.getPlayers().containsKey((Player) p)) return g;
+		}
+		return null;
 	}
 	
 	public void addPlayer(Player p, BwPlayer bp) {

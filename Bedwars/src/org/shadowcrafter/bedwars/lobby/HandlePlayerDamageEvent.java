@@ -18,6 +18,8 @@ public class HandlePlayerDamageEvent implements Listener {
 			
 			if (e.getCause() == DamageCause.FALL) e.setCancelled(true);
 			
+			if (p.getLocation().getY() >= 230) return;
+			
 			if (e.getDamage() >= p.getHealth()) {
 				e.setCancelled(true);
 				p.setHealth(20);
