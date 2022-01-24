@@ -1,11 +1,13 @@
 package org.shadowcrafter.bedwars.data;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 
 import org.bukkit.GameMode;
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
@@ -29,6 +31,8 @@ public class Team {
 		generatorSpeed = 20;
 		goldLimit = 16;
 		ironLimit = 48;
+		playersAlive = 0;
+		bedLocation = new Location[2];
 	}
 	
 	public void respawnPlayerIn(Player p, int seconds) {
@@ -84,12 +88,20 @@ public class Team {
 			p.teleport(spawn);
 			
 			p.getInventory().clear();
+			
+			playersAlive++;
 		});
+		
+		if (playersAlive <= 0) {
+			Arrays.stream(bedLocation).forEach((l) -> l.getBlock().setType(Material.AIR));
+		}
 	}
 	
+	private Location[] bedLocation;
 	private Teams color;
 	private int playerLimit;
 	private List<Player> players;
+	private int playersAlive;
 	private boolean hasBed;
 	private Location spawn;
 	private Location generator;

@@ -59,13 +59,11 @@ public class HandleBedwarsEvents extends StringUtils implements Listener {
 				game.getTeam(p).respawnPlayerIn(p, 5);
 			}else {
 				p.sendMessage("§cYOU DIED");
+				
+				game.getTeam(p).setPlayersAlive(game.getTeam(p).getPlayersAlive() - 1);
 				game.getPlayers().put(p, PlayerState.SPECTATING);
 				
-				boolean teamStillAlive = false;
-				for (Player current : game.getTeam(p).getPlayers()) {
-					if (game.getPlayers().get(current) == PlayerState.PLAYING) teamStillAlive = true;
-				}
-				if (!teamStillAlive) {
+				if (game.getTeam(p).getPlayersAlive() <= 0) {
 					for (Player current : game.getMap().getPlayers()) {
 						current.sendMessage("§6Team " + capitalize(game.getTeam(p).getColor().toString().toLowerCase()) + " has been eliminated");
 					}

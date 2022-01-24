@@ -137,12 +137,19 @@ public class BwGame extends CoordUtils {
 			case "bed":
 				Block start = loc.getBlock();
 				BlockFace face = BlockFace.valueOf(lines[2].toUpperCase());
+				Teams c = Teams.valueOf(lines[1].toUpperCase());
+				
+				int count = 0;
 				for (Bed.Part part : Bed.Part.values()) {
 					if (lines[1].equalsIgnoreCase("aqua")) {
 						start.setType(Material.LIGHT_BLUE_BED);
 					}else {
 						start.setType(Material.valueOf(lines[1].toUpperCase() + "_BED"));
 					}
+					
+					teams.get(c).getBedLocation()[count] = start.getLocation();
+					count++;
+					
 					Bed bedState = (Bed) start.getBlockData();
 					bedState.setPart(part);
 					bedState.setFacing(face);
